@@ -5,7 +5,7 @@
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
-#init-hook=
+# init-hook=
 
 # Profiled execution.
 profile=no
@@ -38,7 +38,7 @@ load-plugins=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=deprecated-module
+disable=deprecated-module, wildcard-import, missing-docstring
 
 
 [REPORTS]
@@ -118,7 +118,7 @@ dummy-variables-rgx=_$|dummy
 
 # List of additional names supposed to be defined in builtins. Remember that
 # you should avoid to define new builtins when possible.
-additional-builtins=
+additional-builtins=QObject, Signal, Slot, QSplitter, Qt, QTreeWidget, QTreeWidgetItem
 
 
 [BASIC]

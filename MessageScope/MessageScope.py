@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""MessgeScope"""
+
 import sys
 import struct
 import datetime
@@ -10,18 +12,19 @@ from PySide.QtGui import *
 from PySide.QtCore import *
 
 import os
-srcroot = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/..")
+SRC_ROOT = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/..")
 
 # import the MsgApp baseclass, for messages, and network I/O
-sys.path.append(srcroot+"/MsgApp")
+sys.path.append(SRC_ROOT + "/MsgApp")
 import MsgGui
 from Messaging import Messaging
 
 import TxTreeWidget
 from MsgPlot import MsgPlot
 
-
 class RxRateCalculatorThread(QObject):
+    """Utility class for Msg Rx Rate calculation"""
+
     rates_updated = Signal(object)
 
     def __init__(self, rx_msg_deque, thread_lock):
@@ -36,19 +39,20 @@ class RxRateCalculatorThread(QObject):
 
         if self.thread_lock.acquire():
             for msg_id, rx_msg_deque in self.rx_msg_deque.items():
-                rates[msg_id] = self.calculate_rate_for_msg(msg_id, rx_msg_deque)
+                rates[msg_id] = self.calculate_rate_for_msg(rx_msg_deque)
 
             self.thread_lock.release()
             self.rates_updated.emit(rates)
 
-    def calculate_rate_for_msg(self, msg_id, rx_msg_deque):
+    @staticmethod
+    def calculate_rate_for_msg(rx_msg_deque):
         if len(rx_msg_deque) <= 1:
             return None
 
         deltas = []
         for i in range(0, len(rx_msg_deque) - 1):
             deltas.append((rx_msg_deque[i] - rx_msg_deque[i + 1]).total_seconds())
-        
+
         average_time_delta = sum(deltas) / float(len(deltas))
         average_rate = 1 / average_time_delta
 
@@ -58,6 +62,9 @@ class RxRateCalculatorThread(QObject):
 
 
 class MessageScopeGui(MsgGui.MsgGui):
+    # pylint: disable=too-many-instance-attributes
+    # MessageScopeGui is a GUI wrapper class, lots of instance attributes are expected
+
     def __init__(self, argv, parent=None):
         MsgGui.MsgGui.__init__(self, "Message Scope 0.1", argv, parent)
 
@@ -65,7 +72,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         self.RxMsg.connect(self.ProcessMessage)
 
         self.configure_gui(parent)
-        self.resize(1000, 600)
+        # self.resize(1000, 600)
         self.ReadTxDictionary()
 
     def configure_gui(self, parent):
@@ -80,21 +87,21 @@ class MessageScopeGui(MsgGui.MsgGui):
         hSplitter.addWidget(txSplitter)
         hSplitter.addWidget(rxSplitter)
 
-        self.txDictionary = self.configure_tx_dictionary(parent)
-        self.txMsgs = self.configure_tx_messages(parent)
+        self.tx_dictionary = self.configure_tx_dictionary(parent)
+        self.tx_msgs = self.configure_tx_messages(parent)
         self.rx_message_list = self.configure_rx_message_list(parent)
         self.rx_messages_widget = self.configure_rx_messages_widget(parent)
         self.configure_msg_plots(parent)
 
-        txSplitter.addWidget(self.txDictionary)
-        txSplitter.addWidget(self.txMsgs)
+        txSplitter.addWidget(self.tx_dictionary)
+        txSplitter.addWidget(self.tx_msgs)
         rxSplitter.addWidget(self.rx_message_list)
         rxSplitter.addWidget(self.rx_messages_widget)
 
         self.setCentralWidget(hSplitter)
 
     def configure_msg_plots(self, parent):
-        self.msgPlots = {}
+        self.msg_plots = {}
 
     def configure_tx_dictionary(self, parent):
         txDictionary = QTreeWidget(parent)
@@ -113,7 +120,7 @@ class MessageScopeGui(MsgGui.MsgGui):
     def configure_rx_message_list(self, parent):
         self.rx_msg_list = {}
         self.rx_msg_list_timestamps = {}
-        
+
         self.thread_lock = threading.Lock()
         rx_rate_calculator = RxRateCalculatorThread(self.rx_msg_list_timestamps, self.thread_lock)
         rx_rate_calculator.rates_updated.connect(self.show_rx_msg_rates)
@@ -139,7 +146,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         return rxMessagesTreeWidget
 
     def ReadTxDictionary(self):
-        print "Tx Dictionary:"
+        print("Tx Dictionary:")
         for id in self.msgLib.MsgNameFromID:
             #print(self.msgLib.MsgNameFromID[id], "=", id)
             name = self.msgLib.MsgNameFromID[id]
@@ -148,17 +155,17 @@ class MessageScopeGui(MsgGui.MsgGui):
 
             parentWidget = None
             if msgDir == None:
-                parentWidget = self.txDictionary
+                parentWidget = self.tx_dictionary
             else:
-                dirItemMatches = self.txDictionary.findItems(msgDir, Qt.MatchExactly, 0)
-                if(len(dirItemMatches) > 0):
+                dirItemMatches = self.tx_dictionary.findItems(msgDir, Qt.MatchExactly, 0)
+                if len(dirItemMatches) > 0:
                     parentWidget = dirItemMatches[0]
                 else:
-                    parentWidget = QTreeWidgetItem(self.txDictionary)
+                    parentWidget = QTreeWidgetItem(self.tx_dictionary)
                     parentWidget.setText(0, msgDir)
             msgItem = QTreeWidgetItem(parentWidget)
             msgItem.setText(0, msgName)
-        self.txDictionary.sortByColumn(0, Qt.AscendingOrder)
+        self.tx_dictionary.sortByColumn(0, Qt.AscendingOrder)
 
     def onTxMessageSelected(self, txListWidgetItem):
         parentWidget = txListWidgetItem.parent()
@@ -173,7 +180,11 @@ class MessageScopeGui(MsgGui.MsgGui):
             message_class = self.msgLib.MsgClassFromName[messageName]
             messageBuffer = message_class.Create()
 
-            messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName, self.txMsgs, message_class, messageBuffer)
+            messageTreeWidgetItem = TxTreeWidget.EditableMessageItem(messageName,
+                                                                     self.tx_msgs,
+                                                                     message_class,
+                                                                     messageBuffer)
+
             messageTreeWidgetItem.send_message.connect(self.on_tx_message_send)
 
     def on_tx_message_send(self, messageBuffer):
@@ -181,21 +192,28 @@ class MessageScopeGui(MsgGui.MsgGui):
 
     def onRxMessageFieldSelected(self, rxWidgetItem):
         try:
-            if isinstance(rxWidgetItem, TxTreeWidget.FieldItem) or isinstance(rxWidgetItem, TxTreeWidget.FieldArrayItem):
+            if (isinstance(rxWidgetItem, TxTreeWidget.FieldItem) or
+                isinstance(rxWidgetItem, TxTreeWidget.FieldArrayItem)):
                 fieldInfo = rxWidgetItem.fieldInfo
                 fieldIndex = 0
+
                 if isinstance(rxWidgetItem, TxTreeWidget.FieldArrayItem):
                     fieldIndex = rxWidgetItem.index
+
                 msg_class = rxWidgetItem.msg_class
                 plotListForID = []
-                if msg_class.ID in self.msgPlots:
-                    plotListForID = self.msgPlots[msg_class.ID]
+
+                if msg_class.ID in self.msg_plots:
+                    plotListForID = self.msg_plots[msg_class.ID]
                 else:
-                    self.msgPlots[msg_class.ID] = plotListForID
+                    self.msg_plots[msg_class.ID] = plotListForID
+
                 alreadyThere = False
+
                 for plot in plotListForID:
                     if plot.fieldInfo == fieldInfo and plot.fieldSubindex == fieldIndex:
                         alreadyThere = True
+
                 if not alreadyThere:
                     print("adding plot of " + msg_class.MsgName() + "." + fieldInfo.name + "[" + str(fieldIndex) + "]")
                     msgPlot = MsgPlot(msg_class, fieldInfo, fieldIndex)
@@ -222,7 +240,7 @@ class MessageScopeGui(MsgGui.MsgGui):
         rx_time = datetime.datetime.now()
 
         if not msg_id in self.rx_msg_list:
-            msg_list_item = QTreeWidgetItem([ msg_name, str(rx_time), "- Hz" ])
+            msg_list_item = QTreeWidgetItem([msg_name, str(rx_time), "- Hz"])
 
             self.rx_message_list.addTopLevelItem(msg_list_item)
             self.rx_msg_list[msg_id] = msg_list_item
@@ -257,14 +275,11 @@ class MessageScopeGui(MsgGui.MsgGui):
             self.rx_messages_widget.addTopLevelItem(msg_widget)
 
         self.rx_msg_widgets[msg_id].set_msg_buffer(msg_buffer)
-    
+
     def display_message_in_plots(self, msg_class, msg_buffer):
-        #print("checking for plots of " + str(msg_class.ID))
-        if msg_class.ID in self.msgPlots:
-            #print("found list of plots for " + str(msg_class.ID))
-            plotListForID = self.msgPlots[msg_class.ID]
+        if msg_class.ID in self.msg_plots:
+            plotListForID = self.msg_plots[msg_class.ID]
             for plot in plotListForID:
-                #print("found plot of " + msg_class.MsgName() + "." + plot.fieldInfo.name + "[" + str(plot.fieldSubindex) + "]")
                 plot.addData(msg_buffer)
 
 # main starts here
