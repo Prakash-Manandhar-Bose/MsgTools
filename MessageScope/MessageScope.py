@@ -10,7 +10,7 @@ from PySide.QtGui import *
 from PySide.QtCore import *
 
 import os
-srcroot=os.path.abspath(os.path.dirname(os.path.abspath(__file__))+"/..")
+srcroot = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + "/..")
 
 # import the MsgApp baseclass, for messages, and network I/O
 sys.path.append(srcroot+"/MsgApp")
@@ -65,14 +65,12 @@ class MessageScopeGui(MsgGui.MsgGui):
         self.RxMsg.connect(self.ProcessMessage)
 
         self.configure_gui(parent)
-        
         self.resize(1000, 600)
-        
         self.ReadTxDictionary()
 
-    def configure_gui(self, parent):   
+    def configure_gui(self, parent):
         hSplitter = QSplitter(parent)
-        
+
         txSplitter = QSplitter(parent)
         rxSplitter = QSplitter(parent)
 
@@ -92,9 +90,9 @@ class MessageScopeGui(MsgGui.MsgGui):
         txSplitter.addWidget(self.txMsgs)
         rxSplitter.addWidget(self.rx_message_list)
         rxSplitter.addWidget(self.rx_messages_widget)
-        
+
         self.setCentralWidget(hSplitter)
-    
+
     def configure_msg_plots(self, parent):
         self.msgPlots = {}
 
@@ -106,9 +104,9 @@ class MessageScopeGui(MsgGui.MsgGui):
     def configure_tx_messages(self, parent):
         txMsgs = QTreeWidget(parent)
         txMsgs.setColumnCount(4)
-        
+
         txMsgsHeader = QTreeWidgetItem(None, ["Message", "Field", "Value", "Units", "Description"])
-        
+
         txMsgs.setHeaderItem(txMsgsHeader)
         return txMsgs
 
@@ -127,7 +125,7 @@ class MessageScopeGui(MsgGui.MsgGui):
 
         rxMessageList = QTreeWidget(parent)
         rxMessageList.setColumnCount(3)
-        rxMsgHeader = QTreeWidgetItem(None, [ "Name", "Last Received", "Rx Rate" ])
+        rxMsgHeader = QTreeWidgetItem(None, ["Name", "Last Received", "Rx Rate"])
         rxMessageList.setHeaderItem(rxMsgHeader)
         return rxMessageList
 
@@ -141,13 +139,13 @@ class MessageScopeGui(MsgGui.MsgGui):
         return rxMessagesTreeWidget
 
     def ReadTxDictionary(self):
-        print("Tx Dictionary:")
+        print "Tx Dictionary:"
         for id in self.msgLib.MsgNameFromID:
             #print(self.msgLib.MsgNameFromID[id], "=", id)
             name = self.msgLib.MsgNameFromID[id]
             (msgDir, msgName) = name.split('.')
             addFn = None
-            
+
             parentWidget = None
             if msgDir == None:
                 parentWidget = self.txDictionary
@@ -180,7 +178,7 @@ class MessageScopeGui(MsgGui.MsgGui):
 
     def on_tx_message_send(self, messageBuffer):
         self.sendFn(messageBuffer.raw)
-    
+
     def onRxMessageFieldSelected(self, rxWidgetItem):
         try:
             if isinstance(rxWidgetItem, TxTreeWidget.FieldItem) or isinstance(rxWidgetItem, TxTreeWidget.FieldArrayItem):
